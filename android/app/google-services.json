@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "330501322922",
+    "firebase_url": "https://kelembabantanah-288f8-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "kelembabantanah-288f8",
+    "storage_bucket": "kelembabantanah-288f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330501322922:android:afbcd3d8644c803c1f78d3",
+        "android_client_info": {
+          "package_name": "com.example.monitoring_penyiraman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqFMh4GVqOs1KYFqfGMjnY-0G1imfI3bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
