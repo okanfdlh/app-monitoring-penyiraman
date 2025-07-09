@@ -16,23 +16,50 @@ class _MonitoringPageState extends State<MonitoringPage> {
   int _kelembaban = 0;
   String _statusPompa = '...';
   bool _loading = true;
+  bool _isAuto = false;
 
   @override
   void initState() {
     super.initState();
-    _dataRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map;
+    final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref('Monitoring/sensor');
+    final DatabaseReference _statusRef = FirebaseDatabase.instance.ref('Monitoring/Status');
+    final DatabaseReference _controlRef = FirebaseDatabase.instance.ref('Monitoring/control');
+
+
+    _sensorRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
       setState(() {
-        _kelembaban = data['KelembabanTanah'];
-        _statusPompa = data['StatusPompa'];
+        _kelembaban = data?['KelembabanTanah'] ?? 0;
         _loading = false;
+      });
+    });
+
+    _statusRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
+      setState(() {
+        _statusPompa = data?['KeranAir'] ?? '...';
+      });
+    });
+    _controlRef.child('Mode').onValue.listen((event) {
+      final mode = event.snapshot.value as bool?;
+      setState(() {
+        _isAuto = mode ?? false;
       });
     });
   }
 
+  void _updateMode(bool newMode) async {
+    final DatabaseReference _controlRef = FirebaseDatabase.instance.ref('Monitoring/control');
+    await _controlRef.update({
+      'Mode': newMode,
+    });
+  }
+
   void _updatePompa(String newStatus) async {
-    await _dataRef.update({
-      'StatusPompa': newStatus,
+    final DatabaseReference _statusRef = FirebaseDatabase.instance.ref('Monitoring/Status');
+
+    await _statusRef.update({
+      'KeranAir': newStatus,
     });
 
     final now = DateTime.now();
@@ -43,6 +70,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
       'status': newStatus,
     });
   }
+
 
   Color _getKelembabanColor() {
     if (_kelembaban >= 70) return Colors.green;
@@ -262,7 +290,7 @@ class _MonitoringPageState extends State<MonitoringPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Status Pompa Air',
+                                    'Status Keran Air',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -284,9 +312,11 @@ class _MonitoringPageState extends State<MonitoringPage> {
                                 scale: 1.2,
                                 child: Switch(
                                   value: _statusPompa == "HIDUP",
-                                  onChanged: (bool value) {
-                                    _updatePompa(value ? "HIDUP" : "MATI");
-                                  },
+                                  onChanged: _isAuto
+                                      ? null
+                                      : (bool value) {
+                                          _updatePompa(value ? "HIDUP" : "MATI");
+                                        },
                                   activeColor: Colors.white,
                                   activeTrackColor: Colors.green,
                                   inactiveThumbColor: Colors.white,
@@ -312,6 +342,41 @@ class _MonitoringPageState extends State<MonitoringPage> {
                                 fontWeight: FontWeight.w500,
                               ),
                               textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.settings, color: Color(0xFF2E7D32)),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Mode Otomatis",
+                                style: TextStyle(
+                                  color: Color(0xFF2E7D32),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Transform.scale(
+                            scale: 1.2,
+                            child: Switch(
+                              value: _isAuto,
+                              onChanged: (bool value) {
+                                _updateMode(value);
+                              },
+                              activeColor: Colors.white,
+                              activeTrackColor: Colors.green,
+                              inactiveThumbColor: Colors.white,
+                              inactiveTrackColor: Colors.grey,
                             ),
                           ),
                         ],
