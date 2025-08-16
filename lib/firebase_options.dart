@@ -8,7 +8,7 @@ class DefaultFirebaseOptions {
       messagingSenderId: "330501322922",
       projectId: "kelembabantanah-288f8",
       databaseURL: "https://kelembabantanah-288f8-default-rtdb.asia-southeast1.firebasedatabase.app",
-      storageBucket: "kelembabantanah-288f8.firebasestorage.app",
+      storageBucket: "kelembabantanah-288f8.appspot.com",
       authDomain: "kelembabantanah-288f8.firebaseapp.com", // untuk web
       measurementId: "G-XXXXXXX", // opsional — boleh kosong atau dihapus
     );

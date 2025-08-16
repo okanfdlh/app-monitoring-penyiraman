@@ -12,38 +12,89 @@ class MonitoringPage extends StatefulWidget {
 class _MonitoringPageState extends State<MonitoringPage> {
   final DatabaseReference _dataRef = FirebaseDatabase.instance.ref('Data');
   final DatabaseReference _historyRef = FirebaseDatabase.instance.ref('History');
+  
 
   int _kelembaban = 0;
   String _statusPompa = '...';
   bool _loading = true;
   bool _isAuto = false;
 
+  Map<String, dynamic> parseSnapshot(DataSnapshot snapshot) {
+    final val = snapshot.value;
+    if (val != null && val is Map) {
+      return Map<String, dynamic>.from(val); // ✅ langsung saja
+    }
+    return {};
+  }
+
+void testFetchSensorOnce() async {
+  final snapshot = await FirebaseDatabase.instance.ref('Monitoring/sensor').get();
+  final value = snapshot.value;
+  if (value != null) {
+    debugPrint("One-time fetch result: ${value}");
+  } else {
+    debugPrint("Sensor snapshot is NULL");
+  }
+}
+
+
+
   @override
   void initState() {
     super.initState();
+    testFetchSensorOnce();
     final DatabaseReference _sensorRef = FirebaseDatabase.instance.ref('Monitoring/sensor');
     final DatabaseReference _statusRef = FirebaseDatabase.instance.ref('Monitoring/Status');
     final DatabaseReference _controlRef = FirebaseDatabase.instance.ref('Monitoring/control');
 
-
     _sensorRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map?;
-      setState(() {
-        _kelembaban = data?['KelembabanTanah'] ?? 0;
-        _loading = false;
-      });
-    });
+      final data = event.snapshot.value;
+
+      if (data != null && data is Map<dynamic, dynamic>) {
+        final kelembaban = data['KelembabanTanah'];
+
+        if (kelembaban is int || kelembaban is double) {
+          setState(() {
+            _kelembaban = kelembaban.toInt();
+            _loading = false;
+          });
+        } else {
+          debugPrint("❗Data Monitoring/sensor tidak ditemukan atau bukan Map: $data");
+          debugPrint("Data tipe: ${data.runtimeType}, value: $data");
+
+          setState(() {
+            _kelembaban = 0;
+            _loading = false;
+          });
+        }
+      } else {
+        // NULL atau bukan Map
+        print("Sensor data kosong atau bukan Map: $data");
+        setState(() {
+          _kelembaban = 0;
+          _loading = false;
+        });
+      }
+});
+
 
     _statusRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map?;
-      setState(() {
-        _statusPompa = data?['KeranAir'] ?? '...';
-      });
+      final value = event.snapshot.value;
+      if (value is Map && value['KeranAir'] is String) {
+        setState(() {
+          _statusPompa = value['KeranAir'];
+        });
+      } else {
+        setState(() {
+          _statusPompa = '...';
+        });
+      }
     });
+
     _controlRef.child('Mode').onValue.listen((event) {
-      final mode = event.snapshot.value as bool?;
+      final modeValue = event.snapshot.value;
       setState(() {
-        _isAuto = mode ?? false;
+        _isAuto = modeValue is bool ? modeValue : false;
       });
     });
   }
@@ -70,7 +121,6 @@ class _MonitoringPageState extends State<MonitoringPage> {
       'status': newStatus,
     });
   }
-
 
   Color _getKelembabanColor() {
     if (_kelembaban >= 70) return Colors.green;
@@ -424,23 +474,22 @@ class _MonitoringPageState extends State<MonitoringPage> {
                       child: StreamBuilder<DatabaseEvent>(
                         stream: _historyRef.onValue,
                         builder: (context, snapshot) {
-                          if (snapshot.hasData &&
-                              snapshot.data!.snapshot.value != null) {
-                            final Map data =
-                                snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                            final historyList = data.entries.toList()
+                          final value = snapshot.data?.snapshot.value;
+                          if (value != null && value is Map) {
+                            final historyList = value.entries.toList()
                               ..sort((a, b) => b.key.compareTo(a.key));
 
                             return ListView.builder(
                               padding: const EdgeInsets.all(10),
                               itemCount: historyList.length,
                               itemBuilder: (context, index) {
-                                final Map<dynamic, dynamic> item = historyList[index].value ?? {};
+                                final item = historyList[index].value;
+                                if (item is! Map) return const SizedBox();
+
                                 final status = item['status']?.toString() ?? 'Tidak diketahui';
                                 final waktu = item['waktu']?.toString() ?? 'Waktu tidak tersedia';
                                 final isHidup = status == 'HIDUP';
 
-                                
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 10),
                                   padding: const EdgeInsets.all(15),
